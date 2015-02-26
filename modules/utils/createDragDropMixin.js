@@ -15,7 +15,11 @@ var DragDropActionCreators = require('../actions/DragDropActionCreators'),
     defaults = require('lodash/object/defaults'),
     isArray = require('lodash/lang/isArray'),
     isObject = require('lodash/lang/isObject'),
+    _map = require('lodash/collection/map'),
     noop = require('lodash/utility/noop');
+
+var dragSources = {};
+var dropTargets = {};
 
 function checkValidType(component, type) {
   invariant(
@@ -189,6 +193,10 @@ function createDragDropMixin(backend) {
           this.constructor.displayName
         );
 
+        dragSources[type] = Array.isArray(dragSources[type]) ?
+          dragSources[type].push({component: this, dragSource: defaults(dragSource, DefaultDragSource)}) :
+          dragSources[type] = [{component: this, dragSource: defaults(dragSource, DefaultDragSource)}];
+
         this._dragSources[type] = defaults(dragSource, DefaultDragSource);
       }
 
@@ -199,6 +207,11 @@ function createDragDropMixin(backend) {
           type,
           this.constructor.displayName
         );
+
+        dropTargets[type] = Array.isArray(dropTargets[type]) ?
+          dropTargets[type].push(this) :
+          dropTargets[type] = [this]; // TODO
+
 
         this._dropTargets[type] = defaults(
           dropTarget,
@@ -228,11 +241,21 @@ function createDragDropMixin(backend) {
         return;
       }
 
+
+
       var { item, dragPreview, dragAnchors, effectsAllowed } = callDragDropLifecycle(beginDrag, this, e),
           containerNode = this.getDOMNode(),
           containerRect = containerNode.getBoundingClientRect(),
           offsetFromClient = backend.getOffsetFromClient(this, e),
           offsetFromContainer;
+
+      var n = _map(dragSources[type], (c) => {
+        // what
+        if(c.dragSource.canJoinDrag(c.component, item)) {
+          return c.dragSource.joinDrag(c.component, item);
+        }
+      });
+      debugger
 
       offsetFromContainer = {
         x: offsetFromClient.x - containerRect.left,
