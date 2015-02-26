@@ -1,5 +1,5 @@
 var React = require('react/addons');
-var _ = require('lodash-node');
+var _ = require('lodash');
 
 var update = React.addons.update;
 var { PropTypes } = React;
