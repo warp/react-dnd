@@ -280,7 +280,7 @@ var App = React.createClass({
                             {card.text}
                         </Card>
                       );
-                    })
+                    }).value()
                   }
                 </Column>
               );
