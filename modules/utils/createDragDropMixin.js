@@ -168,7 +168,7 @@ function createDragDropMixin(backend) {
       }
 
       HandlerRegistry.registerComponent(this, this._dragSources, this._dropTargets);
-      OperationTracker.considerJoinOngoingOperation([this, this._dragSources]);
+      //OperationTracker.considerJoinOngoingOperation([this, this._dragSources]);
     },
 
     componentDidMount() {
@@ -177,7 +177,7 @@ function createDragDropMixin(backend) {
     },
 
     componentWillUnmount() {
-      OperationTracker.considerLeave([this]);
+      //OperationTracker.considerLeave([this]);
       HandlerRegistry.unregisterComponent(this, this._dragSources, this._dropTargets);
 
       DragOperationStore.removeChangeListener(this.handleStoreChangeInDragDropMixin);
@@ -258,7 +258,7 @@ function createDragDropMixin(backend) {
 
       backend.beginDrag(this, e, containerNode, dragPreview, dragAnchors, offsetFromContainer, effectsAllowed);
       DragDropActionCreators.startDragging(type, item, effectsAllowed, offsetFromClient, offsetFromContainer);
-      OperationTracker.considerLeaveDragOperation(HandlerRegistry.getDragSources(type));
+      //OperationTracker.considerLeaveDragOperation(HandlerRegistry.getDragSources(type));
     },
 
     handleDragEnd(type, e) {
