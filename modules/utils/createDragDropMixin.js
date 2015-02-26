@@ -54,8 +54,9 @@ function unregisterDragAwareComponent(component) {
   } = component;
 
   Object.keys(componentDragSources).forEach(type => {
-    dragSourcesByType[type] = dragSourcesByType[type]
-      .filter(record => record.component !== component);
+    dragSourcesByType[type] = dragSourcesByType[type].filter(
+      record => record.component !== component
+    );
 
     if (!dragSourcesByType[type].length) {
       delete dragSourcesByType[type];
