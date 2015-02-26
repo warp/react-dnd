@@ -9,69 +9,15 @@ var DragDropActionCreators = require('../actions/DragDropActionCreators'),
     DefaultDropTarget = require('./DefaultDropTarget'),
     LegacyDefaultDropTarget = require('./LegacyDefaultDropTarget'),
     isFileDragDropEvent = require('./isFileDragDropEvent'),
+    HandlerRegistry = require('./HandlerRegistry'),
+    OperationTracker = require('./OperationTracker'),
     invariant = require('react/lib/invariant'),
     warning = require('react/lib/warning'),
     assign = require('react/lib/Object.assign'),
     defaults = require('lodash/object/defaults'),
     isArray = require('lodash/lang/isArray'),
     isObject = require('lodash/lang/isObject'),
-    union = require('lodash/array/union'),
-    without = require('lodash/array/without'),
     noop = require('lodash/utility/noop');
-
-// TODO: should these be scoped inside createDragDropMixin or here?
-var dragSourcesByType = {};
-var dropTargetsByType = {};
-
-function registerDragAwareComponent(component) {
-  var types;
-  var {
-    _dragSources: componentDragSources,
-    _dropTargets: componentDropTargets
-  } = component;
-
-  Object.keys(componentDragSources).forEach(type => {
-    dragSourcesByType[type] = dragSourcesByType[type] || [];
-    dragSourcesByType[type].push({
-      component: component,
-      dragSource: componentDragSources[type]
-    });
-  });
-
-  Object.keys(componentDropTargets).forEach(type => {
-    dropTargetsByType[type] = dropTargetsByType[type] || [];
-    dropTargetsByType[type].push({
-      component: component,
-      dropTarget: componentDropTargets[type]
-    });
-  });
-}
-
-function unregisterDragAwareComponent(component) {
-  var {
-    _dragSources: componentDragSources,
-    _dropTargets: componentDropTargets
-  } = component;
-
-  Object.keys(componentDragSources).forEach(type => {
-    dragSourcesByType[type] = dragSourcesByType[type].filter(
-      record => record.component !== component
-    );
-
-    if (!dragSourcesByType[type].length) {
-      delete dragSourcesByType[type];
-    }
-  });
-
-  Object.keys(componentDropTargets).forEach(type => {
-    dropTargetsByType[type] = dropTargetsByType[type]
-      .filter(record => record.component !== component);
-
-    if (!dropTargetsByType[type].length) {
-      delete dropTargetsByType[type];
-    }
-  });
-}
 
 function checkValidType(component, type) {
   invariant(
@@ -221,7 +167,8 @@ function createDragDropMixin(backend) {
         );
       }
 
-      registerDragAwareComponent(this);
+      HandlerRegistry.registerComponent(this, this._dragSources, this._dropTargets);
+      OperationTracker.considerJoinOngoingOperation([this, this._dragSources]);
     },
 
     componentDidMount() {
@@ -230,9 +177,11 @@ function createDragDropMixin(backend) {
     },
 
     componentWillUnmount() {
-      unregisterDragAwareComponent(this);
-      unuseBackend(this);
+      OperationTracker.considerLeave([this]);
+      HandlerRegistry.unregisterComponent(this, this._dragSources, this._dropTargets);
+
       DragOperationStore.removeChangeListener(this.handleStoreChangeInDragDropMixin);
+      unuseBackend(this);
     },
 
     registerDragDropItemTypeHandlers(type, handlers) {
@@ -309,18 +258,7 @@ function createDragDropMixin(backend) {
 
       backend.beginDrag(this, e, containerNode, dragPreview, dragAnchors, offsetFromContainer, effectsAllowed);
       DragDropActionCreators.startDragging(type, item, effectsAllowed, offsetFromClient, offsetFromContainer);
-
-      // Delay setting own state by a tick so `getDragState(type).isDragging`
-      // doesn't return `true` yet. Otherwise browser will capture dragged state
-      // as the element screenshot.
-
-      setTimeout(() => {
-        if (this.isMounted() && DragOperationStore.getDraggedItem() === item) {
-          this.setState({
-            ownDraggedItemType: type
-          });
-        }
-      });
+      OperationTracker.considerLeaveDragOperation(HandlerRegistry.getDragSources(type));
     },
 
     handleDragEnd(type, e) {
