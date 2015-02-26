@@ -204,6 +204,7 @@ function createDragDropMixin(backend) {
     },
 
     handleDragStart(type, e) {
+      // TODO: fix propagation
       var { canDrag, beginDrag } = this._dragSources[type];
 
       if (!canDrag(this)) {

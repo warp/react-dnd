@@ -59,8 +59,8 @@ var Column = React.createClass({
   mixins: [DragDropMixin],
 
   statics: {
-    configureDragDrop(registerType) {
-      registerType(DropTypes.COLUMN, {
+    configureDragDrop(register) {
+      register(DropTypes.COLUMN, {
         dragSource: {
           beginDrag(component) {
             return {
@@ -79,7 +79,7 @@ var Column = React.createClass({
         }
       });
 
-      registerType(DropTypes.CARD, { // FIXME: not working
+      register(DropTypes.CARD, { // FIXME: not working
         dropTarget: {
           over(component, item, e) {
             //if (component.props.children.length == 0)
@@ -111,8 +111,8 @@ var Card =  React.createClass({
   },
 
   statics: {
-    configureDragDrop(registerType) {
-      registerType(DropTypes.CARD, {
+    configureDragDrop(register) {
+      register(DropTypes.CARD, {
         dragSource: {
           canJoinDrag(component, item) {
             return item.id === component.props.id;
@@ -123,8 +123,6 @@ var Card =  React.createClass({
           },
 
           beginDrag(component, e) {
-            e.stopPropagation();
-
             return {
               item: {
                 id: component.props.id,
