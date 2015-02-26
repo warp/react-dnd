@@ -62,14 +62,6 @@ var Column = React.createClass({
     configureDragDrop(registerType) {
       registerType(DropTypes.COLUMN, {
         dragSource: {
-          canJoinDrag(component, item) {
-            return item.id === component.props.id;
-          },
-
-          joinDrag(component, item) {
-            debugger
-          },
-
           beginDrag(component) {
             return {
               item: {
@@ -127,9 +119,9 @@ var Card =  React.createClass({
           },
 
           joinDrag(component, item) {
-            debugger
+            alert('joined!');
           },
-          
+
           beginDrag(component, e) {
             e.stopPropagation();
 

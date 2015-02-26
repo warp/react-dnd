@@ -15,11 +15,62 @@ var DragDropActionCreators = require('../actions/DragDropActionCreators'),
     defaults = require('lodash/object/defaults'),
     isArray = require('lodash/lang/isArray'),
     isObject = require('lodash/lang/isObject'),
-    _map = require('lodash/collection/map'),
+    union = require('lodash/array/union'),
+    without = require('lodash/array/without'),
     noop = require('lodash/utility/noop');
 
-var dragSources = {};
-var dropTargets = {};
+// TODO: should these be scoped inside createDragDropMixin or here?
+var dragSourcesByType = {};
+var dropTargetsByType = {};
+
+function registerDragAwareComponent(component) {
+  var types;
+  var {
+    _dragSources: componentDragSources,
+    _dropTargets: componentDropTargets
+  } = component;
+
+  Object.keys(componentDragSources).forEach(type => {
+    dragSourcesByType[type] = dragSourcesByType[type] || [];
+    dragSourcesByType[type].push({
+      component: component,
+      dragSource: componentDragSources[type]
+    });
+  });
+
+  Object.keys(componentDropTargets).forEach(type => {
+    dropTargetsByType[type] = dropTargetsByType[type] || [];
+    dropTargetsByType[type].push({
+      component: component,
+      dropTarget: componentDropTargets[type]
+    });
+  });
+}
+
+function unregisterDragAwareComponent(component) {
+  var {
+    _dragSources: componentDragSources,
+    _dropTargets: componentDropTargets
+  } = component;
+
+  Object.keys(componentDragSources).forEach(type => {
+    dragSourcesByType[type] = dragSourcesByType[type]
+      .filter(record => record.component !== component);
+
+    if (!dragSourcesByType[type].length) {
+      delete dragSourcesByType[type];
+    }
+  });
+
+  Object.keys(componentDropTargets).forEach(type => {
+    dropTargetsByType[type] = dropTargetsByType[type]
+      .filter(record => record.component !== component);
+
+    if (!dropTargetsByType[type].length) {
+      delete dropTargetsByType[type];
+    }
+  });
+}
 
 function checkValidType(component, type) {
   invariant(
@@ -168,6 +219,8 @@ function createDragDropMixin(backend) {
           this.constructor.displayName
         );
       }
+
+      registerDragAwareComponent(this);
     },
 
     componentDidMount() {
@@ -176,6 +229,7 @@ function createDragDropMixin(backend) {
     },
 
     componentWillUnmount() {
+      unregisterDragAwareComponent(this);
       unuseBackend(this);
       DragOperationStore.removeChangeListener(this.handleStoreChangeInDragDropMixin);
     },
@@ -193,10 +247,6 @@ function createDragDropMixin(backend) {
           this.constructor.displayName
         );
 
-        dragSources[type] = Array.isArray(dragSources[type]) ?
-          dragSources[type].push({component: this, dragSource: defaults(dragSource, DefaultDragSource)}) :
-          dragSources[type] = [{component: this, dragSource: defaults(dragSource, DefaultDragSource)}];
-
         this._dragSources[type] = defaults(dragSource, DefaultDragSource);
       }
 
@@ -207,11 +257,6 @@ function createDragDropMixin(backend) {
           type,
           this.constructor.displayName
         );
-
-        dropTargets[type] = Array.isArray(dropTargets[type]) ?
-          dropTargets[type].push(this) :
-          dropTargets[type] = [this]; // TODO
-
 
         this._dropTargets[type] = defaults(
           dropTarget,
@@ -241,21 +286,11 @@ function createDragDropMixin(backend) {
         return;
       }
 
-
-
       var { item, dragPreview, dragAnchors, effectsAllowed } = callDragDropLifecycle(beginDrag, this, e),
           containerNode = this.getDOMNode(),
           containerRect = containerNode.getBoundingClientRect(),
           offsetFromClient = backend.getOffsetFromClient(this, e),
           offsetFromContainer;
-
-      var n = _map(dragSources[type], (c) => {
-        // what
-        if(c.dragSource.canJoinDrag(c.component, item)) {
-          return c.dragSource.joinDrag(c.component, item);
-        }
-      });
-      debugger
 
       offsetFromContainer = {
         x: offsetFromClient.x - containerRect.left,
