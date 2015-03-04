@@ -42,11 +42,11 @@
     "6to5-core": "^3.5.3",
     "6to5-loader": "^3.0.0",
     "path": "0.4.9",
-    "react": "0.12.x",
+    "react": "0.13.0-rc2",
     "react-hot-loader": "^1.1.4",
-    "react-router": "0.12.x",
+    "react-router": "git://github.com/rackt/react-router.git#0.13-compat",
     "request": "2.46.0",
-    "webpack": "1.5.3",
+    "webpack": "1.7.0",
     "webpack-dev-server": "1.7.0"
   }
 }
